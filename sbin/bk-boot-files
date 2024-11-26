@@ -1,0 +1,8 @@
+#!/bin/bash
+
+bk-boot-files () 
+{ 
+  printf '%s\n' vmlinuz initrd.img config System.map
+}
+return 0 2>/dev/null
+bk-boot-files

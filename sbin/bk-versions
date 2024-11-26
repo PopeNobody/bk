@@ -1,0 +1,18 @@
+bk-versions () 
+{ 
+    { 
+        cd /boot;
+        shopt -s nullglob
+        for i in /boot/vmlinuz-*; do
+          test "$i" == "${i%.old}" && echo ${i#/boot/vmlinuz-}
+        done
+        for i in /boot/*/vmlinuz; do
+          test "$i" == "${i%.old}" || continue
+          i=${i#/boot/}
+          i=${i%/vmlinuz}
+          echo $i
+        done
+    } 2>&1 | sort -u | grep -v boot
+}
+return 0 2>/dev/null
+bk-versions

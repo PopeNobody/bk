@@ -1,0 +1,73 @@
+#!/bin/bash
+bk-clean-boot () 
+{ 
+  cd /boot
+  if ((!$#)); then
+    set -- $(bk-versions)
+  fi
+  printf '%s\n' "$@"
+  local v
+  local vs=("$@")
+  declare -p vs v
+  for v in "${vs[@]}";  do
+    if [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+-[0-9]+.*-amd64$ ]]; then
+      :
+    elif [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]-rc1\+$ ]]; then
+      :
+    elif [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]-rc[0-9]$ ]]; then
+      :
+    elif [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]-rc[0-9]-one\+$ ]]; then
+      :
+    elif [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+-skipper\+$ ]]; then
+      :
+    elif [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+\+$ ]]; then
+      :
+    else
+      echo "usage: bk-clean-boot <version>" >&2
+      test -n "$v" &&  echo "v=$v" >&2
+      return 1;
+    fi
+    mkdir -p "$v"
+    for b in $(bk-boot-files $i);
+    do
+      if [ -e $b-$v ]; then
+        mv -v $b-$v $v/$b;
+      elif [ -e "$v/$b" ]; then
+        :;
+      else
+        echo >&2 "missing $b-$v and $v/$b";
+      fi
+    done ;
+    if [ -d /lib/modules/$v/ ] && [ ! -h /lib/modules/$v ]; then
+      if [ -d /boot/$v/modules ]; then
+        rm -f /boot/$v/modules.tgz
+        tarup /boot/$v/modules;
+      fi
+      mv /lib/modules/$v /boot/$v/modules
+      if [ ! -e /boot/lib/modules/$v ]; then
+        ln -sf /boot/$v/modules /boot/lib/modules/$v
+      fi
+    fi
+    if [ ! -h /lib/modules ] || [ ! "/lib/modules/" -ef /boot/lib/modules/ ]; then
+      echo >&2 "/lib/modules" should be a link to /boot/lib/modules;
+      return 3;
+    fi
+    if [ ! -h /boot/lib/modules/$v ] || [ ! /boot/lib/modules/$v/. -ef /boot/$v/modules/. ]; then
+      echo >&2 "/boot/lib/modules/$v" should be a link to "/boot/$v/modules";
+      return 4;
+    fi
+
+    set -- $(glob /lib/modules/$v /boot/lib/modules/$v /boot/$v/modules);
+    if [ "$1/." -ef "$2/." ] && [ "$2/." -ef "$3/." ]; then
+      :
+    elif [ "$1/." -ef "$2/." ]; then
+      echo "$2/." != "$3/.";
+      return 1;
+    else
+      echo "$1/." != "$2/.";
+      return 1;
+    fi
+  done
+}
+return 0 2>/dev/null
+bk-clean-boot "$@" 

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if (( UID )); then
+  exec sudo "${BASH_SOURCE}" "$@"
+else
+  if [[ "$1" =~ ^wlan[0-9]$ ]]; then
+    echo "match"
+    IFACE="$1"
+    shift;
+  else
+    echo "no match"
+    IFACE=wlan0
+  fi
+  if ((!$#)); then
+    set -- "$(essids)"
+  fi
+  while (($#)); do
+    exec wpa_supplicant -Dnl80211 -i "$IFACE" \
+      -c /etc/wpa_supplicant/net.d/common.conf
+    shift
+  done
+fi
+

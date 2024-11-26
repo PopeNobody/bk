@@ -1,0 +1,14 @@
+bk-load-funcs () 
+{ 
+    if test -z "$*"; then
+        bash -c "bk-load-funcs x 2>/dev/null" && bk-load-funcs x;
+    else
+      for i in $(echo /boot/scr/*.bash);
+      do
+        if test -r "$i"; then
+          echo >&2 -n $(basename $i .bash) ""
+          source $i;
+        fi
+      done;
+    fi
+}
